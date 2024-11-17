@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ubicación en Tiempo Real</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhY3KKZqE_kTqO-SAztCZg9KrVdEqzRIw"></script> 
+    <script src="/socket.io/socket.io.js"></script> 
+</head>
+<body>
+    <h1>Ubicación de dispositivos</h1>
+    <div id="map" style="width: 100%; height: 500px;"></div> 
+    
+    <script>
+        // Crear la conexión con Socket.IO
+        const socket = io();
+
+        // Obtención de la ubicación con alta precisión
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                
+                console.log(`Latitud: ${latitude}, Longitud: ${longitude}`);
+
+                // Enviar las coordenadas al servidor
+                sendLocationToServer(latitude, longitude);
+            },
+            (error) => {
+                console.error('Error al obtener la ubicación:', error);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+
+        // Función para enviar las coordenadas al servidor
+        function sendLocationToServer(latitude, longitude) {
+            socket.emit('sendLocation', { latitude, longitude });
+        }
+
+        // Configurar el mapa con Google Maps
+        const map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 0, lng: 0 },
+            zoom: 15,
+        });
+
+        // Función para colocar el marcador en el mapa
+        function placeMarker(latitude, longitude) {
+            const marker = new google.maps.Marker({
+                position: { lat: parseFloat(latitude), lng: parseFloat(longitude) },
+                map: map,
+                title: 'Ubicación precisa',
+            });
+
+            map.setCenter({ lat: parseFloat(latitude), lng: parseFloat(longitude) });
+        }
+
+        // Recibir coordenadas del servidor y colocar el marcador
+        socket.on('locationBroadcast', (data) => {
+            const { latitude, longitude } = data;
+            console.log('Latitud recibida:', latitude, 'Longitud recibida:', longitude);
+            placeMarker(latitude, longitude);
+        });
+    </script>
+</body>
+</html>
