@@ -4,15 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ubicación en Tiempo Real</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhY3KKZqE_kTqO-SAztCZg9KrVdEqzRIw"></script> 
-    <script src="/socket.io/socket.io.js"></script> 
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAhY3KKZqE_kTqO-SAztCZg9KrVdEqzRIw"></script> <!-- Sustituye con tu clave API -->
+    <script src="/socket.io/socket.io.js"></script> <!-- Socket.IO para la comunicación en tiempo real -->
 </head>
 <body>
-    <h1>Ubicación de dispositivos</h1>
-    <div id="map" style="width: 100%; height: 500px;"></div> 
+    <h1>Ubicación en Tiempo Real</h1>
+    <div id="map" style="width: 100%; height: 500px;"></div> <!-- Contenedor del mapa -->
     
     <script>
-        // Crear la conexión con Socket.IO
+        // Solicitar permiso de notificación
+        if (Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    console.log('Permiso para notificaciones concedido');
+                } else {
+                    console.log('Permiso para notificaciones denegado');
+                }
+            });
+        }
+
+        // Crear la conexión Socket.IO
         const socket = io();
 
         // Obtención de la ubicación con alta precisión
@@ -58,11 +69,22 @@
             map.setCenter({ lat: parseFloat(latitude), lng: parseFloat(longitude) });
         }
 
-        // Recibir coordenadas del servidor y colocar el marcador
+        // Recibir coordenadas del servidor y colocar el marcador en el mapa
         socket.on('locationBroadcast', (data) => {
             const { latitude, longitude } = data;
+
             console.log('Latitud recibida:', latitude, 'Longitud recibida:', longitude);
+
+            // Colocar el marcador en el mapa
             placeMarker(latitude, longitude);
+
+            // Mostrar notificación si el permiso está concedido
+            if (Notification.permission === 'granted') {
+                new Notification('Nueva ubicación detectada', {
+                    body: `Latitud: ${latitude}, Longitud: ${longitude}`,
+                    icon: 'https://example.com/icon.png', // Aquí puedes poner el ícono de la notificación (opcional)
+                });
+            }
         });
     </script>
 </body>
